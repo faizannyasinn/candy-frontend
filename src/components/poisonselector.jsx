@@ -1,36 +1,23 @@
-import React, { useState } from "react";
-import "./CandyBoard.css"; // Reusing same styles
-import candyImages from "../utils/candyImages";
+import React from 'react';
+import './CandyBoard.css';
 
-const PoisonSelector = ({ onSelect }) => {
-  const [selectedId, setSelectedId] = useState(null);
-
-  const handleClick = (id) => {
-    setSelectedId(id);
-    setTimeout(() => {
-      onSelect(id); // Send poison id to parent
-    }, 1000); // Short delay to simulate "secret" selection
-  };
+function PoisonSelector({ onSelect }) {
+  const candies = Array.from({ length: 15 }, (_, i) => i + 1);
 
   return (
-    <div className="candy-board">
-      <h2 style={{ gridColumn: "1 / -1", textAlign: "center" }}>
-        🔒 Select a secret poisonous candy
-      </h2>
-      {candyImages.map((src, i) => (
-        <div key={i} className="candy-cell">
-          <img
-            src={src}
-            alt={`Candy ${i}`}
-            className={`candy-img ${
-              selectedId === i ? "selected-candy" : ""
-            }`}
-            onClick={() => handleClick(i)}
-          />
-        </div>
+    <div className="board">
+      {candies.map((num) => (
+        <img
+          key={num}
+          src={`assets/candies/candy${num}.png`}
+          alt={`Candy ${num}`}
+          className="candy"
+          onClick={() => onSelect(num)}
+        />
       ))}
     </div>
   );
-};
+}
 
 export default PoisonSelector;
+
