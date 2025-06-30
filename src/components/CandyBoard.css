@@ -1,22 +1,17 @@
-.candy-board-container {
-  text-align: center;
-  margin-top: 30px;
-}
-
-.candy-grid {
+.candy-board {
   display: grid;
-  grid-template-columns: repeat(5, 80px);
+  grid-template-columns: repeat(5, 60px);
   grid-gap: 15px;
   justify-content: center;
+  margin-top: 20px;
 }
 
-.candy-img {
-  width: 80px;
-  height: 80px;
+.candy {
+  font-size: 35px;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s ease;
 }
 
-.candy-img:hover {
-  transform: scale(1.1);
+.candy:hover {
+  transform: scale(1.3);
 }
