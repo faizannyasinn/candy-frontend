@@ -1,3 +1,4 @@
+import CandyBoard from './components/CandyBoard';
 import poisonselector from './components/poisonselector';
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
