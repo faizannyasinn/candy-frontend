@@ -1,0 +1,32 @@
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, 70px);
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 40px;
+  padding: 10px;
+  background-color: #fff0f5; /* Light fruity background */
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.candy {
+  width: 70px;
+  height: 70px;
+  border-radius: 12px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 2px solid #ffe4ec;
+}
+
+.candy:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 10px rgba(255, 99, 132, 0.4);
+}
+
+.selected {
+  outline: 3px solid #ff69b4;
+  outline-offset: 2px;
+}
