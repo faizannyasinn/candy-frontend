@@ -35,49 +35,50 @@ function App() {
     setStatus('Joining room...');
   };
 
-  useEffect(() => {
-    socket.on('connected', (id) => {
-      setPlayerId(id);
-    });
+useEffect(() => {
+  socket.on("connected", (id) => {
+    setPlayerId(id);
+  });
 
-    socket.on('both-joined', (data) => {
-      setCandies(data.candies);
-      if (data.turn === socket.id) {
-        setIsMyTurn(true);
-        setStatus('Your turn to choose poison');
-      } else {
-        setStatus('Waiting for opponent to choose poison...');
-      }
-      setStage('poison');
-    });
+  socket.on("both-joined", (data) => {
+    setCandies(data.candies);
+    if (data.turn === socket.id) {
+      setIsMyTurn(true);
+      setStatus('Your turn to choose poison');
+    } else {
+      setStatus('Waiting for opponent to choose poison...');
+    }
+    setStage('poison');
+  });
 
-    socket.on('start-game', (data) => {
-      setCandies(data.candies);
-      setPoisonedByOpponent(data.poisonedCandy);
-      setStage('game');
-      setIsMyTurn(data.turn === socket.id);
-      setStatus(data.turn === socket.id ? 'Your turn to eat a candy' : 'Opponent\'s turn');
-    });
+  socket.on("start-game", ({ candies, turn }) => {
+    setStage("game");
+    setCandies(candies);
+    setIsMyTurn(turn === socket.id);
+    setStatus(turn === socket.id ? "Your turn to eat a candy" : "Opponent's turn");
+  });
 
-    socket.on('update-board', (data) => {
-      setCandies(data.candies);
-      setIsMyTurn(data.turn === socket.id);
-      setStatus(data.turn === socket.id ? 'Your turn' : 'Opponent\'s turn');
-    });
+  socket.on("update-board", ({ candies, turn }) => {
+    setCandies(candies);
+    setIsMyTurn(turn === socket.id);
+    setStatus(turn === socket.id ? "Your turn" : "Opponent's turn");
+  });
 
-    socket.on('game-over', (data) => {
-      setStage('end');
-      setWinner(data.winner === socket.id ? 'You win!' : 'You lose!');
-    });
+  socket.on("game-over", ({ winner }) => {
+    const msg = winner === socket.id ? "🎉 You Win!" : "💀 You Lost!";
+    alert(msg);
+    window.location.reload(); // Optional reset
+  });
 
-    return () => {
-      socket.off('connected');
-      socket.off('both-joined');
-      socket.off('start-game');
-      socket.off('update-board');
-      socket.off('game-over');
-    };
-  }, []);
+  return () => {
+    socket.off("connected");
+    socket.off("both-joined");
+    socket.off("start-game");
+    socket.off("update-board");
+    socket.off("game-over");
+  };
+}, []);
+
 
   const handleCandyClick = (index) => {
     if (!isMyTurn || stage !== 'game') return;
