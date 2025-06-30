@@ -80,10 +80,15 @@ useEffect(() => {
 }, []);
 
 
-  const handleCandyClick = (index) => {
-    if (!isMyTurn || stage !== 'game') return;
-    socket.emit('eat-candy', { roomCode, index });
-  };
+const handleCandyClick = (candyId) => {
+  if (turn !== playerType) return;
+  socket.emit("eat-candy", {
+    roomCode,
+    candyId,
+    player: playerType
+  });
+};
+
 
   const handlePoisonSelect = (index) => {
     if (selectedPoison !== null || stage !== 'poison') return;
