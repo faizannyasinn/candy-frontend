@@ -1,27 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './CandyBoard.css';
 
-const generateCandies = () => {
-  const colors = ['red', 'blue', 'green', 'orange', 'purple', 'pink', 'yellow', 'cyan', 'lime', 'magenta', 'teal', 'brown', 'coral', 'gold', 'violet'];
-  return colors.sort(() => 0.5 - Math.random()).slice(0, 15);
-};
+const candies = Array.from({ length: 15 }, (_, i) => i);
 
-function CandyBoard({ socket, roomCode, isMyTurn, lastClicked }) {
-  const [candies, setCandies] = useState([]);
-
-  useEffect(() => {
-    setCandies(generateCandies());
-  }, []);
-
-  const handleClick = (index) => {
-    if (!isMyTurn) return alert("Wait for your turn");
-    socket.emit("candy-clicked", { roomCode, index });
-  };
+function CandyBoard() {
+  const [message, setMessage] = useState("Game started! Take turns to pick a candy.");
 
   return (
-    <div className="board">
-      {candies.map((color, index) => (
-        <div
-          key={index}
-          className={`dot ${lastClicked === index ? 'last' : ''}`}
-          style={{ background
+    <div>
+      <h2>{message}</h2>
+      <div className="candy-board">
+        {candies.map((_, i) => (
+          <div key={i} className="dot" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default CandyBoard;
