@@ -1,23 +1,21 @@
 import React from 'react';
 import './CandyBoard.css';
 
-function PoisonSelector({ onSelect }) {
-  const candies = Array.from({ length: 15 }, (_, i) => i + 1);
+function PoisonSelector({ onSelect, message }) {
+  const candies = Array.from({ length: 15 });
 
   return (
-    <div className="board">
-      {candies.map((num) => (
-        <img
-          key={num}
-          src={`assets/candies/candy${num}.png`}
-          alt={`Candy ${num}`}
-          className="candy"
-          onClick={() => onSelect(num)}
-        />
-      ))}
+    <div>
+      <h3>{message}</h3>
+      <div className="candy-board">
+        {candies.map((_, i) => (
+          <div key={i} className="candy" onClick={() => onSelect(i)}>
+            🍭
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 export default PoisonSelector;
-
