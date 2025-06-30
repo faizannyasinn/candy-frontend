@@ -1,66 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './CandyBoard.css';
 
-const candies = [
-  "/images/candy1.png", "/images/candy2.png", "/images/candy3.png",
-  "/images/candy4.png", "/images/candy5.png", "/images/candy6.png",
-  "/images/candy7.png", "/images/candy8.png", "/images/candy9.png",
+const COLORS = [
+  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+  '#FF9F40', '#FF6B6B', '#00C49F', '#C71585', '#FFD700',
+  '#ADFF2F', '#20B2AA', '#FF4500', '#9370DB', '#00CED1'
 ];
 
-function CandyBoard({ socket, myRole, poisonInfo, setWinner }) {
-  const [turn, setTurn] = useState("player1");
-  const [selected, setSelected] = useState([]);
-
-  const handleClick = (index) => {
-    if (turn !== myRole || selected.includes(index)) return;
-
-    if (
-      (myRole === "player1" && poisonInfo.player2 === index) ||
-      (myRole === "player2" && poisonInfo.player1 === index)
-    ) {
-      setWinner("You lost! 💀");
-      socket.emit("game-over", myRole === "player1" ? "player2" : "player1");
-    } else {
-      setSelected([...selected, index]);
-      socket.emit("next-turn", myRole === "player1" ? "player2" : "player1");
-    }
+function getRandomPosition(index) {
+  const top = Math.random() * 70 + 10; // 10% to 80%
+  const left = Math.random() * 70 + 10;
+  return {
+    top: `${top}%`,
+    left: `${left}%`,
+    backgroundColor: COLORS[index],
   };
+}
+
+const CandyBoard = ({ onSelect, disabled, selected }) => {
+  const [positions, setPositions] = useState([]);
 
   useEffect(() => {
-    socket.on("next-turn", (next) => {
-      setTurn(next);
-    });
-
-    socket.on("game-over", (winner) => {
-      if (winner === myRole) {
-        setWinner("🎉 You Won!");
-      } else {
-        setWinner("You lost! 💀");
-      }
-    });
-
-    return () => {
-      socket.off("next-turn");
-      socket.off("game-over");
-    };
-  }, [socket, myRole]);
+    const pos = Array(15).fill(0).map((_, i) => getRandomPosition(i));
+    setPositions(pos);
+  }, []);
 
   return (
-    <div className="board-container">
-      <h3>Turn: {turn === myRole ? "Your Turn" : "Opponent's Turn"}</h3>
-      <div className="candy-grid">
-        {candies.map((src, idx) => (
-          <img
-            key={idx}
-            src={src}
-            alt={`Candy ${idx}`}
-            className={`candy-img ${selected.includes(idx) ? "dimmed" : ""}`}
-            onClick={() => handleClick(idx)}
-          />
-        ))}
-      </div>
+    <div className="board">
+      {positions.map((style, idx) => (
+        <div
+          key={idx}
+          className="dot"
+          style={style}
+          onClick={() => !disabled && onSelect(idx)}
+        >
+          {selected === idx && <div className="selected-marker" />}
+        </div>
+      ))}
     </div>
   );
-}
+};
 
 export default CandyBoard;
