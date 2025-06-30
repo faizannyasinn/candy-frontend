@@ -1,45 +1,88 @@
 import React, { useEffect, useState } from 'react';
 import './CandyBoard.css';
 
-const getRandomPosition = () => {
-  const top = Math.floor(Math.random() * 80) + 10;
-  const left = Math.floor(Math.random() * 80) + 10;
-  return { top: `${top}%`, left: `${left}%` };
+const colors = ['#ff4d4d', '#4dff4d', '#4d4dff', '#ffb84d', '#b84dff', '#4dd2ff'];
+
+const generateCandies = () => {
+  const candies = [];
+  for (let i = 0; i < 15; i++) {
+    candies.push({
+      id: i,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      x: Math.floor(Math.random() * 80) + 10,
+      y: Math.floor(Math.random() * 60) + 20,
+      visible: true
+    });
+  }
+  return candies;
 };
 
-const colors = [
-  '#FF5C5C', '#FFB347', '#FFD700', '#ADFF2F', '#40E0D0',
-  '#6495ED', '#DA70D6', '#FF69B4', '#FF7F50', '#90EE90',
-  '#FF6347', '#BA55D3', '#00CED1', '#FFA07A', '#20B2AA'
-];
+export default function CandyBoard({ socket, player, roomCode, isMyTurn, setIsMyTurn }) {
+  const [candies, setCandies] = useState(generateCandies());
+  const [opponentPoison, setOpponentPoison] = useState(null);
+  const [myPoison, setMyPoison] = useState(null);
+  const [winner, setWinner] = useState(null);
 
-function CandyBoard() {
-  const [dots, setDots] = useState([]);
+  const handleCandyClick = (id) => {
+    if (!isMyTurn || winner || !candies[id].visible) return;
+
+    if (id === opponentPoison) {
+      socket.emit('game-over', { roomCode, winner: 'opponent' });
+      setWinner('opponent');
+    } else {
+      setCandies((prev) =>
+        prev.map((candy) => (candy.id === id ? { ...candy, visible: false } : candy))
+      );
+      socket.emit('candy-eaten', { roomCode, candyId: id });
+      setIsMyTurn(false);
+    }
+  };
 
   useEffect(() => {
-    const newDots = Array.from({ length: 15 }, (_, i) => ({
-      id: i,
-      color: colors[i % colors.length],
-      position: getRandomPosition()
-    }));
-    setDots(newDots);
-  }, []);
+    socket.on('start-game', ({ opponentPoisonId, yourTurn }) => {
+      setOpponentPoison(opponentPoisonId);
+      setIsMyTurn(yourTurn);
+    });
+
+    socket.on('opponent-ate', ({ candyId }) => {
+      setCandies((prev) =>
+        prev.map((candy) => (candy.id === candyId ? { ...candy, visible: false } : candy))
+      );
+      setIsMyTurn(true);
+    });
+
+    socket.on('you-win', () => {
+      setWinner('you');
+    });
+
+    return () => {
+      socket.off('start-game');
+      socket.off('opponent-ate');
+      socket.off('you-win');
+    };
+  }, [socket]);
 
   return (
-    <div className="candy-board">
-      {dots.map((dot) => (
-        <div
-          key={dot.id}
-          className="candy-dot"
-          style={{
-            backgroundColor: dot.color,
-            top: dot.position.top,
-            left: dot.position.left
-          }}
-        />
-      ))}
+    <div className="board">
+      {candies.map((candy) =>
+        candy.visible ? (
+          <div
+            key={candy.id}
+            className="candy-dot"
+            onClick={() => handleCandyClick(candy.id)}
+            style={{
+              backgroundColor: candy.color,
+              left: `${candy.x}%`,
+              top: `${candy.y}%`
+            }}
+          />
+        ) : null
+      )}
+      {winner && (
+        <div className="game-result">
+          {winner === 'you' ? '🎉 You Win!' : '💀 You Lost!'}
+        </div>
+      )}
     </div>
   );
 }
-
-export default CandyBoard;
