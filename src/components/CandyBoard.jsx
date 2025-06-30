@@ -1,20 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './CandyBoard.css';
 
-function CandyBoard({ onCandyClick, disabled = false }) {
-  const candies = Array.from({ length: 15 }, (_, i) => i + 1);
+const candyImages = [
+  'c1.png', 'c2.png', 'c3.png', 'c4.png', 'c5.png',
+  'c6.png', 'c7.png', 'c8.png', 'c9.png', 'c10.png',
+  'c11.png', 'c12.png', 'c13.png', 'c14.png', 'c15.png'
+];
 
+function CandyBoard({ isYourTurn, onCandyClick, message }) {
   return (
-    <div className="board">
-      {candies.map((num) => (
-        <img
-          key={num}
-          src={`assets/candies/candy${num}.png`}
-          alt={`Candy ${num}`}
-          className="candy"
-          onClick={() => !disabled && onCandyClick(num)}
-        />
-      ))}
+    <div className="candy-board-container">
+      <h3>{message}</h3>
+      <div className="candy-grid">
+        {candyImages.map((img, index) => (
+          <img
+            key={index}
+            src={`/candies/${img}`}
+            alt={`Candy ${index + 1}`}
+            className="candy-img"
+            onClick={() => isYourTurn && onCandyClick(index)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
