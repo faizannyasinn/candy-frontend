@@ -1,29 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import CandyBoard from './components/CandyBoard';
+import CandyBoard from './components/CandyBoard.jsx';
+import PoisonSelector from './components/PoisonSelector.jsx';
 import './App.css';
 
 const socket = io("https://candy-backend-production.up.railway.app");
 
 function App() {
-  const [stage, setStage] = useState("lobby"); // lobby, waiting, poison, playing, end
+  const [stage, setStage] = useState("lobby"); // lobby, waiting, poison, game, over
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [status, setStatus] = useState("");
-  const [isPlayer1, setIsPlayer1] = useState(false);
-  const [poisonedByPlayer, setPoisonedByPlayer] = useState({});
-  const [myTurn, setMyTurn] = useState(false);
-  const [selectedCandy, setSelectedCandy] = useState(null);
+  const [isMyTurn, setIsMyTurn] = useState(false);
+  const [lastClicked, setLastClicked] = useState(null);
+  const [gameOverMsg, setGameOverMsg] = useState("");
 
-  const generateRoomCode = () => {
-    return Math.floor(10000 + Math.random() * 90000).toString();
-  };
+  const generateRoomCode = () => Math.floor(10000 + Math.random() * 90000).toString();
 
   const handleCreateRoom = () => {
     if (!name) return alert("Enter your name");
     const code = generateRoomCode();
     setRoomCode(code);
-    setIsPlayer1(true);
     socket.emit("join-room", code, name);
     setStage("waiting");
     setStatus(`Room Code: ${code}\nWaiting for opponent...`);
@@ -36,104 +33,71 @@ function App() {
     setStatus("Joining room...");
   };
 
-  const handleCandyClick = (idx) => {
-    if (stage === "poison") {
-      socket.emit("poison-select", roomCode, idx);
-      setStatus("Waiting for opponent to select poison...");
-      setStage("wait-poison");
-    } else if (stage === "playing" && myTurn) {
-      setSelectedCandy(idx);
-      socket.emit("eat-candy", roomCode, idx);
-    }
-  };
-
   useEffect(() => {
-    socket.on("player-joined", () => {
-      setStatus(isPlayer1 ? "Your turn to choose poison!" : "Waiting for opponent to choose poison...");
-      setStage(isPlayer1 ? "poison" : "wait-poison");
+    socket.on("both-joined", () => {
+      setStage("poison");
     });
 
-    socket.on("both-poisoned", () => {
-      setStatus(isPlayer1 ? "Your turn! Eat a candy." : "Waiting for opponent's move...");
-      setMyTurn(isPlayer1);
-      setStage("playing");
+    socket.on("start-game", () => {
+      setStage("game");
     });
 
-    socket.on("opponent-ate", (idx) => {
-      if (poisonedByPlayer[isPlayer1 ? "player2" : "player1"] === idx) {
-        setStage("end");
-        setStatus("You win! Opponent ate your poison candy.");
-      } else {
-        setMyTurn(true);
-        setStatus("Your turn! Eat a candy.");
-      }
+    socket.on("next-turn", ({ currentTurn, lastClicked }) => {
+      setIsMyTurn(currentTurn === socket.id);
+      setLastClicked(lastClicked);
     });
 
-    socket.on("game-over", () => {
-      setStage("end");
-      setStatus("You lost! You ate poison candy.");
-    });
-
-    socket.on("store-poison", (who, index) => {
-      setPoisonedByPlayer(prev => ({ ...prev, [who]: index }));
+    socket.on("game-over", ({ loser }) => {
+      setStage("over");
+      setGameOverMsg(socket.id === loser ? "You Lost 😢" : "You Win 🎉");
     });
 
     return () => {
-      socket.off("player-joined");
-      socket.off("both-poisoned");
-      socket.off("opponent-ate");
+      socket.off("both-joined");
+      socket.off("start-game");
+      socket.off("next-turn");
       socket.off("game-over");
-      socket.off("store-poison");
     };
-  }, [isPlayer1, poisonedByPlayer, roomCode]);
+  }, []);
 
   return (
-    <div className="App" style={{ textAlign: 'center', paddingTop: '40px' }}>
+    <div className="App" style={{ textAlign: 'center', padding: '30px' }}>
       <h1>🍬 Tutti Frutti Candy Game</h1>
 
       {stage === "lobby" && (
         <>
-          <input
-            placeholder="Enter your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{ padding: '10px', marginBottom: '10px' }}
-          /><br />
-
-          <button onClick={handleCreateRoom} style={{ margin: '10px', padding: '10px 20px' }}>
-            ➕ Create a Room
-          </button>
-
-          <div style={{ marginTop: '20px' }}>or</div>
-
-          <input
-            placeholder="Enter Room Code"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-            style={{ padding: '10px', marginTop: '10px' }}
-          /><br />
-
-          <button onClick={handleJoinRoom} style={{ marginTop: '10px', padding: '10px 20px' }}>
-            🔑 Join a Room
-          </button>
+          <input placeholder="Enter your name" value={name} onChange={(e) => setName(e.target.value)} />
+          <br /><br />
+          <button onClick={handleCreateRoom}>➕ Create Room</button>
+          <br /><br />
+          <input placeholder="Enter Room Code" value={roomCode} onChange={(e) => setRoomCode(e.target.value)} />
+          <br /><br />
+          <button onClick={handleJoinRoom}>🔑 Join Room</button>
         </>
       )}
 
-      {(stage === "waiting" || stage === "wait-poison" || stage === "end") && (
-        <div style={{ whiteSpace: 'pre-line', marginTop: '30px' }}>
-          {status}
+      {stage === "waiting" && (
+        <div style={{ whiteSpace: 'pre-line' }}>{status}</div>
+      )}
+
+      {stage === "poison" && (
+        <PoisonSelector socket={socket} roomCode={roomCode} />
+      )}
+
+      {stage === "game" && (
+        <CandyBoard
+          socket={socket}
+          roomCode={roomCode}
+          isMyTurn={isMyTurn}
+          lastClicked={lastClicked}
+        />
+      )}
+
+      {stage === "over" && (
+        <div>
+          <h2>{gameOverMsg}</h2>
+          <button onClick={() => window.location.reload()}>Play Again</button>
         </div>
-      )}
-
-      {(stage === "poison" || stage === "playing") && (
-        <>
-          <h3 style={{ marginTop: '20px' }}>{status}</h3>
-          <CandyBoard
-            onSelect={handleCandyClick}
-            disabled={stage === "wait-poison" || (stage === "playing" && !myTurn)}
-            selected={selectedCandy}
-          />
-        </>
       )}
     </div>
   );
