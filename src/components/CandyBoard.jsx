@@ -11,7 +11,13 @@ function CandyBoard() {
       <h2>{message}</h2>
       <div className="candy-board">
         {candies.map((_, i) => (
-          <div key={i} className="dot" />
+          <div
+            key={i}
+            className="dot"
+            style={{
+              backgroundColor: `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`
+            }}
+          />
         ))}
       </div>
     </div>
