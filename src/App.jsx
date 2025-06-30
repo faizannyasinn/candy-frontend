@@ -1,4 +1,4 @@
-import PoisonSelector from './components/poisonselector';
+import poisonselector from './components/poisonselector';
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import './App.css';
@@ -6,7 +6,7 @@ import './App.css';
 const socket = io("https://candy-backend-production.up.railway.app");
 
 function App() {
-  const [stage, setStage] = useState("lobby"); // lobby | waiting | game | poison
+  const [stage, setStage] = useState("lobby"); // lobby | waiting | poison | game
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [status, setStatus] = useState("");
@@ -95,12 +95,14 @@ function App() {
       {stage === "poison" && (
         <>
           <h2>{status}</h2>
-          <PoisonSelector onSelect={handlePoisonSelect} />
+          <poisonselector onSelect={handlePoisonSelect} />
         </>
       )}
 
       {stage === "game" && (
-        <h2>{status}</h2> // Later we’ll show board here
+        <>
+          <h2>{status}</h2>
+        </>
       )}
     </div>
   );
