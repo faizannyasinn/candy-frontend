@@ -1,19 +1,18 @@
 import React from 'react';
-import './CandyBoard.css';
+import './PoisonSelector.css';
 
-function PoisonSelector({ onSelect, message }) {
-  const candies = Array.from({ length: 15 });
-
+function PoisonSelector({ candies, onSelect, selected }) {
   return (
-    <div>
-      <h3>{message}</h3>
-      <div className="candy-board">
-        {candies.map((_, i) => (
-          <div key={i} className="candy" onClick={() => onSelect(i)}>
-            🍭
-          </div>
-        ))}
-      </div>
+    <div className="poison-grid">
+      {candies.map((candy, index) => (
+        <div
+          key={index}
+          className={`poison-candy ${selected === index ? 'selected' : ''}`}
+          onClick={() => onSelect(index)}
+        >
+          🍭
+        </div>
+      ))}
     </div>
   );
 }
