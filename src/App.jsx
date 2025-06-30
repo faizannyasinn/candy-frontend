@@ -7,23 +7,33 @@ import './App.css';
 const socket = io("https://candy-backend-production.up.railway.app");
 
 function App() {
-  const [stage, setStage] = useState("lobby"); // lobby | waiting | poison | game | result
+  const [stage, setStage] = useState("lobby"); // lobby, waiting, poison, game, end
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [status, setStatus] = useState("");
-  const [isCreator, setIsCreator] = useState(false);
-  const [poisonChosen, setPoisonChosen] = useState(false);
-  const [bothPoisonSelected, setBothPoisonSelected] = useState(false);
+  const [isHost, setIsHost] = useState(false);
+  const [candies, setCandies] = useState([]);
+  const [poisonSelected, setPoisonSelected] = useState(false);
+  const [opponentPoison, setOpponentPoison] = useState(null);
 
-  const generateRoomCode = () => {
-    return Math.floor(10000 + Math.random() * 90000).toString();
+  // Create 15 random candies
+  const generateCandies = () => {
+    const colors = [
+      '#FF5C5C', '#FFB347', '#FFD700', '#ADFF2F', '#40E0D0',
+      '#6495ED', '#DA70D6', '#FF69B4', '#FF7F50', '#90EE90',
+      '#FF6347', '#BA55D3', '#00CED1', '#FFA07A', '#20B2AA'
+    ];
+    return Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      color: colors[i % colors.length]
+    }));
   };
 
   const handleCreateRoom = () => {
     if (!name) return alert("Enter your name");
-    const code = generateRoomCode();
+    const code = Math.floor(10000 + Math.random() * 90000).toString();
     setRoomCode(code);
-    setIsCreator(true);
+    setIsHost(true);
     socket.emit("join-room", code, name);
     setStage("waiting");
     setStatus(`Room Code: ${code}\nWaiting for opponent...`);
@@ -36,42 +46,38 @@ function App() {
     setStatus("Joining room...");
   };
 
+  const handleSelectPoison = (index) => {
+    if (poisonSelected) return;
+    setPoisonSelected(true);
+    socket.emit("select-poison", roomCode, index);
+    setStatus("Waiting for opponent to select poison...");
+  };
+
   useEffect(() => {
     socket.on("player-joined", () => {
-      if (isCreator) {
+      setStatus("🎉 Both players joined!");
+      setCandies(generateCandies());
+      setTimeout(() => {
         setStage("poison");
-        setStatus("🎯 Choose 1 candy to mark as poison");
-      } else {
-        setStage("waiting");
-        setStatus("Waiting for opponent to choose poison...");
-      }
+        setStatus("Select a candy to poison.");
+      }, 1000);
     });
 
-    socket.on("poison-set", () => {
-      if (!isCreator) {
-        setStage("poison");
-        setStatus("🎯 Your turn! Choose 1 candy to mark as poison");
-      } else {
-        setStatus("Waiting for opponent to choose poison...");
-      }
+    socket.on("opponent-selected-poison", () => {
+      setOpponentPoison(true);
     });
 
-    socket.on("both-poison-set", () => {
+    socket.on("start-game", () => {
       setStage("game");
-      setStatus("🎮 Both players chose poison. Let the game begin!");
+      setStatus("Game has started!");
     });
 
     return () => {
       socket.off("player-joined");
-      socket.off("poison-set");
-      socket.off("both-poison-set");
+      socket.off("opponent-selected-poison");
+      socket.off("start-game");
     };
-  }, [isCreator]);
-
-  const handlePoisonSelected = () => {
-    setPoisonChosen(true);
-    socket.emit("poison-selected", roomCode);
-  };
+  }, [roomCode]);
 
   return (
     <div className="App" style={{ textAlign: 'center', paddingTop: '40px' }}>
@@ -83,7 +89,7 @@ function App() {
             placeholder="Enter your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={{ padding: '10px', marginBottom: '10px' }}
+            style={{ padding: '10px', marginBottom: '10px', width: '220px' }}
           /><br />
 
           <button onClick={handleCreateRoom} style={{ margin: '10px', padding: '10px 20px' }}>
@@ -96,7 +102,7 @@ function App() {
             placeholder="Enter Room Code"
             value={roomCode}
             onChange={(e) => setRoomCode(e.target.value)}
-            style={{ padding: '10px', marginTop: '10px' }}
+            style={{ padding: '10px', marginTop: '10px', width: '220px' }}
           /><br />
 
           <button onClick={handleJoinRoom} style={{ marginTop: '10px', padding: '10px 20px' }}>
@@ -106,21 +112,24 @@ function App() {
       )}
 
       {stage === "waiting" && (
-        <div style={{ whiteSpace: 'pre-line', marginTop: '30px' }}>
-          {status}
-        </div>
+        <div style={{ whiteSpace: 'pre-line', marginTop: '30px' }}>{status}</div>
       )}
 
       {stage === "poison" && (
         <>
-          <h3>{status}</h3>
-          <PoisonSelector onSelect={handlePoisonSelected} />
+          <p>{status}</p>
+          <PoisonSelector
+            candies={candies}
+            onSelect={handleSelectPoison}
+            selectedIndex={poisonSelected ? -1 : null}
+            isDisabled={poisonSelected}
+          />
         </>
       )}
 
       {stage === "game" && (
         <>
-          <h3>{status}</h3>
+          <p>{status}</p>
           <CandyBoard />
         </>
       )}
