@@ -1,11 +1,11 @@
-.candy-board {
+.board {
   position: relative;
   width: 90%;
   height: 500px;
-  margin: 30px auto;
   background-color: white;
   border: 2px solid #ccc;
-  border-radius: 10px;
+  margin: 20px auto;
+  border-radius: 12px;
 }
 
 .candy-dot {
@@ -14,9 +14,18 @@
   height: 30px;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s ease;
 }
 
 .candy-dot:hover {
   transform: scale(1.2);
+}
+
+.game-result {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  color: #333;
 }
