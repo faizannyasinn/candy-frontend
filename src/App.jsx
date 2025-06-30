@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import CandyBoard from './components/CandyBoard';
 import PoisonSelector from './components/PoisonSelector';
+import CandyBoard from './components/CandyBoard';
 import './App.css';
 
 const socket = io("https://candy-backend-production.up.railway.app");
 
 function App() {
-  const [stage, setStage] = useState("lobby"); // lobby | waiting | poison | game | end
+  const [stage, setStage] = useState("lobby"); // lobby | waiting | poison | game | result
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [status, setStatus] = useState("");
-  const [playerId, setPlayerId] = useState("");
-  const [isPlayerTurn, setIsPlayerTurn] = useState(false);
-  const [poisonIndex, setPoisonIndex] = useState(null);
+  const [playerId, setPlayerId] = useState(null);
+  const [playerList, setPlayerList] = useState([]);
+  const [isPoisonChosen, setIsPoisonChosen] = useState(false);
+  const [isMyTurn, setIsMyTurn] = useState(false);
+  const [winnerId, setWinnerId] = useState(null);
 
-  const generateRoomCode = () => {
-    return Math.floor(10000 + Math.random() * 90000).toString();
-  };
+  const generateRoomCode = () => Math.floor(10000 + Math.random() * 90000).toString();
 
   const handleCreateRoom = () => {
     if (!name) return alert("Enter your name");
@@ -35,65 +35,48 @@ function App() {
     setStatus("Joining room...");
   };
 
+  const handlePoisonSelect = (index) => {
+    socket.emit("poison-chosen", { roomCode, poisonIndex: index });
+    setStatus("Waiting for opponent to choose...");
+    setIsPoisonChosen(true);
+  };
+
+  const handleCandyClick = (index) => {
+    if (!isMyTurn) return;
+    socket.emit("play-turn", { roomCode, candyIndex: index });
+  };
+
   useEffect(() => {
-    socket.on("connect", () => {
-      setPlayerId(socket.id);
-    });
+    setPlayerId(socket.id);
 
     socket.on("player-joined", (players) => {
-      if (players[0] === socket.id) {
+      setPlayerList(players);
+      if (players.length === 2) {
         setStage("poison");
-        setStatus("You're Player 1. Choose a poisonous candy.");
-      } else {
-        setStage("waiting");
-        setStatus("You're Player 2. Waiting for Player 1 to choose poison...");
+        setStatus("Choose one candy to be poisonous...");
       }
     });
 
     socket.on("poison-chosen", () => {
       setStage("game");
-      setStatus("Game started! Player 1's turn.");
-      if (playerId === socket.id) {
-        setIsPlayerTurn(true);
-      }
     });
 
     socket.on("turn-played", ({ nextPlayerId }) => {
-      setIsPlayerTurn(socket.id === nextPlayerId);
-      setStatus(socket.id === nextPlayerId ? "Your turn!" : "Opponent's turn...");
+      setIsMyTurn(nextPlayerId === socket.id);
     });
 
     socket.on("game-over", ({ winnerId }) => {
-      setStage("end");
-      if (winnerId === socket.id) {
-        setStatus("🎉 You won!");
-      } else {
-        setStatus("💀 You clicked the poisonous candy. You lost!");
-      }
+      setStage("result");
+      setWinnerId(winnerId);
     });
 
     return () => {
-      socket.off("connect");
       socket.off("player-joined");
       socket.off("poison-chosen");
       socket.off("turn-played");
       socket.off("game-over");
     };
-  }, [playerId]);
-
-  const handlePoisonSelect = (index) => {
-    setPoisonIndex(index);
-    setStage("game");
-    setIsPlayerTurn(true);
-    setStatus("Game started! Your turn.");
-    socket.emit("poison-chosen", { roomCode, poisonIndex: index });
-  };
-
-  const handleCandyClick = (index) => {
-    if (!isPlayerTurn || stage !== "game") return;
-
-    socket.emit("play-turn", { roomCode, candyIndex: index });
-  };
+  }, []);
 
   return (
     <div className="App" style={{ textAlign: 'center', paddingTop: '50px' }}>
@@ -101,48 +84,31 @@ function App() {
 
       {stage === "lobby" && (
         <>
-          <input
-            placeholder="Enter your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{ padding: '10px', marginBottom: '10px' }}
-          /><br />
-
-          <button onClick={handleCreateRoom} style={{ margin: '10px', padding: '10px 20px' }}>
-            ➕ Create a Room
-          </button>
-
-          <div style={{ marginTop: '20px' }}>or</div>
-
-          <input
-            placeholder="Enter Room Code"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
-            style={{ padding: '10px', marginTop: '10px' }}
-          /><br />
-
-          <button onClick={handleJoinRoom} style={{ marginTop: '10px', padding: '10px 20px' }}>
-            🔑 Join a Room
-          </button>
+          <input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+          <br /><br />
+          <button onClick={handleCreateRoom}>➕ Create a Room</button>
+          <br /><br />
+          <input placeholder="Room Code" value={roomCode} onChange={(e) => setRoomCode(e.target.value)} />
+          <br /><br />
+          <button onClick={handleJoinRoom}>🔑 Join a Room</button>
         </>
       )}
 
-      {stage === "waiting" && (
-        <div style={{ whiteSpace: 'pre-line', marginTop: '30px' }}>{status}</div>
-      )}
+      {stage === "waiting" && <pre>{status}</pre>}
 
-      {stage === "poison" && (
+      {stage === "poison" && !isPoisonChosen && (
         <PoisonSelector onSelect={handlePoisonSelect} message={status} />
       )}
 
       {stage === "game" && (
-        <>
-          <h3>{status}</h3>
-          <CandyBoard isYourTurn={isPlayerTurn} onCandyClick={handleCandyClick} />
-        </>
+        <CandyBoard isYourTurn={isMyTurn} onCandyClick={handleCandyClick} />
       )}
 
-      {stage === "end" && <h2>{status}</h2>}
+      {stage === "result" && (
+        <h2>
+          {winnerId === socket.id ? "🎉 You Win!" : "💀 You Lost!"}
+        </h2>
+      )}
     </div>
   );
 }
