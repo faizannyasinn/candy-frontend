@@ -1,0 +1,25 @@
+.candy-board {
+  display: grid;
+  grid-template-columns: repeat(5, 80px);
+  grid-gap: 16px;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.candy-img {
+  width: 80px;
+  height: 80px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+}
+
+.candy-img:hover {
+  transform: scale(1.05);
+}
+
+.candy-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
