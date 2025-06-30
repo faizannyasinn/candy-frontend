@@ -6,7 +6,7 @@ import './App.css';
 const socket = io("https://candy-backend-production.up.railway.app");
 
 function App() {
-  const [stage, setStage] = useState("lobby"); // lobby | waiting | game
+  const [stage, setStage] = useState("lobby"); // lobby | waiting | game | poison
   const [name, setName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [status, setStatus] = useState("");
@@ -31,14 +31,26 @@ function App() {
     setStatus("Joining room...");
   };
 
+  const handlePoisonSelect = (id) => {
+    console.log("Poison candy chosen:", id);
+    socket.emit("poison-selected", { room: roomCode, id });
+    setStatus("Waiting for opponent to choose poison candy...");
+  };
+
   useEffect(() => {
     socket.on("player-joined", () => {
+      setStage("poison");
+      setStatus("🎉 Both players joined! Choose your poison candy...");
+    });
+
+    socket.on("both-poison-selected", () => {
       setStage("game");
-      setStatus("🎉 Both players joined! Game starting soon...");
+      setStatus("Game Started! Take turns to pick candies...");
     });
 
     return () => {
       socket.off("player-joined");
+      socket.off("both-poison-selected");
     };
   }, []);
 
@@ -78,6 +90,13 @@ function App() {
         <div style={{ whiteSpace: 'pre-line', marginTop: '30px' }}>
           {status}
         </div>
+      )}
+
+      {stage === "poison" && (
+        <>
+          <h2>{status}</h2>
+          <PoisonSelector onSelect={handlePoisonSelect} />
+        </>
       )}
 
       {stage === "game" && (
