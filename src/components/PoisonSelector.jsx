@@ -1,24 +1,27 @@
 import React from 'react';
 import './PoisonSelector.css';
 
-const candies = [
-  "/images/candy1.png", "/images/candy2.png", "/images/candy3.png",
-  "/images/candy4.png", "/images/candy5.png", "/images/candy6.png",
-  "/images/candy7.png", "/images/candy8.png", "/images/candy9.png",
-];
+const candies = Array.from({ length: 15 }, (_, i) => i);
 
-function PoisonSelector({ onSelect }) {
+function PoisonSelector({ roomCode, socket, isFirstPlayer }) {
+  const handleSelect = (index) => {
+    socket.emit("poison-selected", { roomCode, poisonIndex: index });
+  };
+
   return (
-    <div className="poison-grid">
-      {candies.map((src, index) => (
-        <img
-          key={index}
-          src={src}
-          alt={`Candy ${index}`}
-          className="candy-img"
-          onClick={() => onSelect(index)}
-        />
-      ))}
+    <div>
+      <h2>{isFirstPlayer ? "Choose 1 candy to poison for opponent" : "Waiting for opponent to choose poison..."}</h2>
+      {isFirstPlayer && (
+        <div className="candy-board">
+          {candies.map((_, i) => (
+            <div
+              key={i}
+              className="dot"
+              onClick={() => handleSelect(i)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
